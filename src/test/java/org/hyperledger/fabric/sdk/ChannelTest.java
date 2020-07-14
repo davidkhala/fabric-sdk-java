@@ -17,24 +17,6 @@ package org.hyperledger.fabric.sdk;
 //Allow throwing undeclared checked execeptions in mock code.
 //CHECKSTYLE.OFF: IllegalImport
 
-import java.io.File;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
 import com.google.protobuf.ByteString;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -57,19 +39,20 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import sun.misc.Unsafe;
+
+import java.io.File;
+import java.lang.reflect.Constructor;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import static org.hyperledger.fabric.sdk.Channel.PeerOptions.createPeerOptions;
-import static org.hyperledger.fabric.sdk.testutils.TestUtils.assertArrayListEquals;
-import static org.hyperledger.fabric.sdk.testutils.TestUtils.getField;
-import static org.hyperledger.fabric.sdk.testutils.TestUtils.getMockUser;
-import static org.hyperledger.fabric.sdk.testutils.TestUtils.matchesRegex;
-import static org.hyperledger.fabric.sdk.testutils.TestUtils.setField;
-import static org.hyperledger.fabric.sdk.testutils.TestUtils.tarBytesToEntryArrayList;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hyperledger.fabric.sdk.testutils.TestUtils.*;
+import static org.junit.Assert.*;
 
 //CHECKSTYLE.ON: IllegalImport
 
@@ -1195,7 +1178,9 @@ public class ChannelTest {
         @Override
         public CompletableFuture<ProposalResponsePackage.ProposalResponse> sendProposalAsync(ProposalPackage.SignedProposal proposal) {
             if (throwThis != null) {
-                getUnsafe().throwException(throwThis);
+                CompletableFuture<ProposalResponsePackage.ProposalResponse> ret = new CompletableFuture<>();
+                ret.completeExceptionally(throwThis);
+                return ret;
             }
             return returnedFuture;
         }
@@ -1203,16 +1188,6 @@ public class ChannelTest {
         @Override
         public boolean isChannelActive() {
             return true;
-        }
-
-        private Unsafe getUnsafe() {  //lets us throw undeclared exceptions.
-            try {
-                Field field = Unsafe.class.getDeclaredField("theUnsafe");
-                field.setAccessible(true);
-                return (Unsafe) field.get(null);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 

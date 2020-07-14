@@ -18,6 +18,7 @@ package org.hyperledger.fabric.sdk.idemix;
 
 import java.security.KeyPair;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -39,18 +40,16 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class IdemixTest {
-    // Number of tasks to run
-    static final int TASKS = 10;
-    // How many taks we run at the same time
+    // How many tasks we run at the same time
     static final int THREAD_POOL = 25;
     // How many iterations per task we do
     static final int ITERATIONS = 10;
 
     @Test
     public void idemixTest() throws ExecutionException, InterruptedException {
-        if (!TestConfig.getConfig().getRunIdemixMTTest()) {
-            return;
-        }
+
+
+        long startTime = new Date().getTime();
         ExecutorService serviceSingleTask = Executors.newFixedThreadPool(THREAD_POOL);
         ExecutorService serviceMultiTask = Executors.newFixedThreadPool(THREAD_POOL);
 
@@ -58,20 +57,15 @@ public class IdemixTest {
         String[] attributeNames = {"Attr1", "Attr2", "Attr3", "Attr4", "Attr5"};
         IdemixSetup setup = new IdemixSetup(attributeNames);
 
+
+        System.out.println("milestone:idemix setup completed, Time elapsed:" + (new Date().getTime() - startTime) / 1000 + " second");
+        startTime = new Date().getTime();
         // One single task
         IdemixTask taskS = new IdemixTask(setup);
         Future<Boolean> result = serviceSingleTask.submit(taskS);
         assertTrue(result.get());
+        System.out.println("Done, Time elapsed:" + (new Date().getTime() - startTime) / 1000 + " second");
 
-        // i tasks running at the same time in parallel in different thread pools.
-        List<Future<Boolean>> results = new ArrayList<>();
-        for (int i = TASKS; i > 0; i--) {
-            IdemixTask taskM = new IdemixTask(setup);
-            results.add(serviceMultiTask.submit(taskM));
-        }
-        for (Future<Boolean> f : results) {
-            assertTrue(f.get());
-        }
     }
 
     private class IdemixSetup {
@@ -85,6 +79,11 @@ public class IdemixTest {
         private KeyPair revocationKeyPair;
         private BIG[] attrs;
 
+        /**
+         * Time consuming
+         *
+         * @param attributeNames
+         */
         private IdemixSetup(String[] attributeNames) {
             // Choose attribute names and create an issuer key pair
             // this.attributeNames = new String[]{"Attribute1", "Attribute2"};
@@ -195,7 +194,7 @@ public class IdemixTest {
             assertFalse(signature.verify(disclosure, setup.key.getIpk(), msg, setup.attrs, 0, setup.revocationKeyPair.getPublic(), epoch));
 
             // test signature verification with different issuer public key
-            assertFalse(signature.verify(disclosure2, new IdemixIssuerKey(new String[] {"Attr1, Attr2, Attr3, Attr4, Attr5"}).getIpk(), msg, setup.attrs, 0, setup.revocationKeyPair.getPublic(), epoch));
+            assertFalse(signature.verify(disclosure2, new IdemixIssuerKey(new String[]{"Attr1, Attr2, Attr3, Attr4, Attr5"}).getIpk(), msg, setup.attrs, 0, setup.revocationKeyPair.getPublic(), epoch));
 
             // test signature verification with different message
             byte[] msg2 = {1, 1, 1};
